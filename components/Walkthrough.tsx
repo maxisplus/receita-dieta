@@ -1,23 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-
-/**
- * Walkthrough component
- *
- * - Automatically opens for first-time users (localStorage key: "walkthroughSeen")
- * - Highlights three important UI elements and shows short descriptions:
- *   1) Observações button (title="Observações")
- *   2) Calcular água button (text contains "água")
- *   3) Exportar button (text contains "Exportar")
- *
- * Props:
- *  - forceOpen?: boolean  -> forces the walkthrough open (useful for debugging)
- *
- * Notes:
- *  - It tries to find targets by simple DOM queries. If an element isn't found it will skip to the next step.
- *  - The highlight and tooltip reposition on scroll/resize.
- */
+import React, { useEffect, useState } from "react";
 
 type Step = {
   id: string;
@@ -35,7 +18,6 @@ export default function Walkthrough({
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const LOCAL_KEY = "walkthroughSeen";
 
@@ -56,7 +38,6 @@ export default function Walkthrough({
       description:
         "Use esta calculadora para estimar a ingestão diária de água. O resultado ficará visível no botão e ajuda a manter a hidratação adequada.",
       findElement: () => {
-        // Encontrar botão que contenha a palavra 'água' ou 'Calcular água'
         const buttons = Array.from(
           document.querySelectorAll("button"),
         ) as HTMLElement[];
@@ -76,13 +57,12 @@ export default function Walkthrough({
         const buttons = Array.from(
           document.querySelectorAll("button"),
         ) as HTMLElement[];
-        // Find button with "Exportar" text or with download icon path
         return (
           buttons.find((b) => /\bExportar\b/i.test(b.textContent || "")) ||
           buttons.find((b) => {
             const svg = b.querySelector("svg");
             if (!svg) return false;
-            const path = svg.querySelector('path[d*="16.5v2.25"]'); // Part of download icon
+            const path = svg.querySelector('path[d*="16.5v2.25"]');
             return !!path;
           }) ||
           null
@@ -91,34 +71,28 @@ export default function Walkthrough({
     },
   ];
 
-  // Helpers
   useEffect(() => {
     setMounted(true);
 
-    // Show walkthrough if first time (no localStorage) or forced
     try {
       const seen = localStorage.getItem(LOCAL_KEY);
       if (forceOpen) {
         setOpen(true);
         setStepIndex(0);
       } else if (!seen) {
-        // delay a little to allow UI to render and ensure targets present
         setTimeout(() => {
           setOpen(true);
           setStepIndex(0);
         }, 200);
       }
     } catch (e) {
-      // If localStorage isn't available, open only if forced
       if (forceOpen) {
         setOpen(true);
         setStepIndex(0);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [forceOpen]);
 
-  // Position highlight around current target
   useEffect(() => {
     if (!open) {
       setHighlightRect(null);
@@ -134,7 +108,6 @@ export default function Walkthrough({
       if (el) {
         const rect = el.getBoundingClientRect();
         setHighlightRect(rect);
-        // scroll into view if not fully visible
         const margin = 12;
         const topVisible = rect.top >= margin;
         const bottomVisible = rect.bottom <= window.innerHeight - margin;
@@ -142,7 +115,6 @@ export default function Walkthrough({
           el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       } else {
-        // If element not found, try to advance to next step after a short delay
         setHighlightRect(null);
       }
     };
@@ -155,7 +127,7 @@ export default function Walkthrough({
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
 
-    const interval = setInterval(update, 700); // keep trying for dynamic UIs
+    const interval = setInterval(update, 700);
 
     return () => {
       active = false;
@@ -163,10 +135,8 @@ export default function Walkthrough({
       window.removeEventListener("resize", onResize);
       clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, stepIndex]);
+  }, [open, stepIndex, steps]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -180,7 +150,6 @@ export default function Walkthrough({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, stepIndex]);
 
   const handleClose = (markSeen = true) => {
@@ -195,9 +164,7 @@ export default function Walkthrough({
     }
   };
 
-  const handleSkip = () => {
-    handleClose(true);
-  };
+  const handleSkip = () => handleClose(true);
 
   const handleNext = () => {
     if (stepIndex < steps.length - 1) {
@@ -214,19 +181,18 @@ export default function Walkthrough({
   if (!mounted || !open) return null;
 
   const current = steps[stepIndex];
-  // Try to find element; if not found, allow user to still read description but indicate missing target
   const targetEl = current.findElement();
   const rect = highlightRect;
 
-  // Tooltip positioning: prefer above target, else below, else centered
+  // Calculate tooltip position (kept inline since dynamic)
   const tooltipStyle: React.CSSProperties = {
     left: "50%",
     transform: "translateX(-50%)",
   };
+
   if (rect) {
     const tooltipWidth = 340;
     const spaceAbove = rect.top;
-    const spaceBelow = window.innerHeight - rect.bottom;
     const preferAbove = spaceAbove > 140;
     const x = Math.max(
       12,
@@ -247,219 +213,103 @@ export default function Walkthrough({
       }
     }
   } else {
-    // center
     tooltipStyle.top = "18vh";
     tooltipStyle.left = "50%";
     tooltipStyle.transform = "translateX(-50%)";
   }
 
-  // small helpers for styles
-  const overlayStyle: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15, 23, 42, 0.6)", // semi-dark
-    zIndex: 9999,
-    backdropFilter: "blur(2px)",
-  };
-
-  const highlightBoxStyle: React.CSSProperties = rect
-    ? {
-        position: "fixed",
-        left: rect.left - 8,
-        top: rect.top - 8,
-        width: rect.width + 16,
-        height: rect.height + 16,
-        borderRadius: 10,
-        boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
-        border: "2px solid rgba(255,145,26,0.95)",
-        zIndex: 10001,
-        pointerEvents: "none",
-      }
-    : {};
-
-  const tooltipBase: React.CSSProperties = {
-    position: "fixed",
-    width: 340,
-    maxWidth: "calc(100% - 32px)",
-    background: "linear-gradient(180deg,#fff,#fff)",
-    color: "#0f172a",
-    borderRadius: 12,
-    padding: "14px 16px",
-    boxShadow: "0 10px 30px rgba(2,6,23,0.4)",
-    zIndex: 10002,
-  };
-
-  const dotStyle = (i: number) => ({
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    background: i === stepIndex ? "#ff911a" : "#cbd5e1",
-    margin: "0 4px",
-    transition: "background .18s",
-  });
-
   return (
     <>
-      <div style={overlayStyle} onClick={() => handleClose(true)} aria-hidden />
-      {/* Highlighted element box */}
-      {rect && <div style={highlightBoxStyle} aria-hidden />}
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]"
+        onClick={() => handleClose(true)}
+        aria-hidden
+      />
+
+      {/* Highlight box */}
+      {rect && (
+        <div
+          className="fixed rounded-xl shadow-2xl border-2 border-orange-500/95 z-[10001] pointer-events-none"
+          style={{
+            left: rect.left - 8,
+            top: rect.top - 8,
+            width: rect.width + 16,
+            height: rect.height + 16,
+          }}
+          aria-hidden
+        />
+      )}
 
       {/* Tooltip */}
-      <div ref={tooltipRef} style={{ ...tooltipBase, ...tooltipStyle }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#FF8F2A" }}>
+      <div
+        className="fixed w-[340px] max-w-[calc(100%-32px)] bg-white text-slate-900 rounded-xl p-4 shadow-2xl z-[10002]"
+        style={tooltipStyle}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-orange-500 leading-tight">
               {current.title}
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                fontSize: 13,
-                color: "#475569",
-                lineHeight: 1.35,
-              }}
-            >
+            </h3>
+            <p className="mt-2 text-[13px] text-slate-600 leading-relaxed">
               {current.description}
-            </div>
+            </p>
             {!targetEl && (
-              <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+              <p className="mt-2 text-xs text-slate-400 italic">
                 Nota: elemento não encontrado na tela — prossiga com a
                 explicação.
-              </div>
+              </p>
             )}
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              alignItems: "flex-end",
-            }}
-          >
-            <button
-              onClick={() => {
-                // don't close when clicking inside tooltip
-                // keep focus in tooltip
-              }}
-              aria-hidden
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#64748b",
-                fontSize: 12,
-                cursor: "default",
-              }}
-            >
-              Passo {stepIndex + 1}/{steps.length}
-            </button>
-          </div>
+          <span className="text-xs text-slate-400 font-medium shrink-0">
+            Passo {stepIndex + 1}/{steps.length}
+          </span>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
+        {/* Footer - Fixed layout */}
+        <div className="flex items-center justify-between gap-4 mt-5 pt-2">
+          {/* Step dots */}
+          <div className="flex items-center gap-1.5">
             {steps.map((_, i) => (
-              <div key={i} style={dotStyle(i)} />
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                  i === stepIndex ? "bg-orange-500" : "bg-slate-300"
+                }`}
+              />
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
             <button
               onClick={handleSkip}
-              style={{
-                background: "white",
-                border: "1px solid #e2e8f0",
-                padding: "7px 12px",
-                borderRadius: 8,
-                color: "#475569",
-                fontSize: 12,
-                cursor: "pointer",
-                fontWeight: 500,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#cbd5e1";
-                e.currentTarget.style.background = "#f8fafc";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.background = "white";
-              }}
+              className="px-3 py-1.5 text-xs font-medium text-slate-500 bg-transparent hover:bg-slate-100 rounded-lg transition-colors"
             >
-              Não mostrar novamente
+              Pular
             </button>
 
-            <button
-              onClick={handlePrev}
-              disabled={stepIndex === 0}
-              style={{
-                background: stepIndex === 0 ? "#f1f5f9" : "white",
-                border: "1px solid #e2e8f0",
-                padding: "7px 14px",
-                borderRadius: 8,
-                color: stepIndex === 0 ? "#94a3b8" : "#475569",
-                fontSize: 12,
-                cursor: stepIndex === 0 ? "not-allowed" : "pointer",
-                fontWeight: 500,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                if (stepIndex !== 0) {
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  e.currentTarget.style.background = "#f8fafc";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (stepIndex !== 0) {
-                  e.currentTarget.style.borderColor = "#e2e8f0";
-                  e.currentTarget.style.background = "white";
-                }
-              }}
-            >
-              Anterior
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrev}
+                disabled={stepIndex === 0}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                  stepIndex === 0
+                    ? "text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed"
+                    : "text-slate-700 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400"
+                }`}
+              >
+                Anterior
+              </button>
 
-            <button
-              onClick={handleNext}
-              style={{
-                background: "linear-gradient(90deg,#ff911a,#ffa940)",
-                border: "none",
-                padding: "7px 16px",
-                borderRadius: 8,
-                color: "white",
-                fontSize: 12,
-                cursor: "pointer",
-                fontWeight: 600,
-                boxShadow: "0 2px 8px rgba(255,145,26,0.25)",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 12px rgba(255,145,26,0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 2px 8px rgba(255,145,26,0.25)";
-              }}
-            >
-              {stepIndex < steps.length - 1 ? "Próximo" : "Concluir"}
-            </button>
+              <button
+                onClick={handleNext}
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all"
+              >
+                {stepIndex < steps.length - 1 ? "Próximo" : "Concluir"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
