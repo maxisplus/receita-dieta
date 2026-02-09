@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { validatePhone, formatPhone, saveUser, maskPhone } from '@/lib/auth';
+import { formatPhone, maskPhone, saveUser, validatePhone } from "@/lib/auth";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
 
     if (!phone.trim()) {
-      setError('Por favor, informe seu número de telefone');
+      setError("Por favor, informe seu número de telefone");
       setLoading(false);
       return;
     }
@@ -32,12 +32,12 @@ export default function LoginPage() {
           name: response.user.name,
           phone: formattedPhone,
         });
-        router.push('/');
+        router.push("/");
       } else {
-        setError(response.message || 'Usuário não encontrado');
+        setError(response.message || "Usuário não encontrado");
       }
     } catch (err) {
-      setError('Erro ao validar telefone. Tente novamente.');
+      setError("Erro ao validar telefone. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -52,29 +52,32 @@ export default function LoginPage() {
             <Image
               src="/cropped-principal.png"
               alt="Logo"
-              width={140}
-              height={140}
+              width={200}
+              height={200}
               className="object-contain"
               priority
             />
           </div>
-          <p className="text-sm font-medium text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Desafio dos 21 dias
-          </p>
+          </h1>
+          <p className="text-gray-600">Transforme sua saúde em três semanas</p>
         </div>
 
         {/* Card de Login */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Bem-vindo!
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Bem-vindo!</h2>
           <p className="text-sm text-gray-600 mb-6">
-            Informe seu número de telefone para acessar seu cardápio personalizado.
+            Informe seu número de telefone para acessar seu cardápio
+            personalizado.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Número de telefone
               </label>
               <div className="relative">
@@ -102,8 +105,18 @@ export default function LoginPage() {
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 animate-fade-in">
                 <p className="text-sm text-red-800 flex items-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   {error}
                 </p>
@@ -120,14 +133,29 @@ export default function LoginPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Validando...
                 </span>
               ) : (
-                'Acessar Cardápio'
+                "Acessar Cardápio"
               )}
             </button>
           </form>
