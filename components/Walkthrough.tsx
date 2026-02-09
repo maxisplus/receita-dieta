@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 type Step = {
   id: string;
@@ -8,6 +8,58 @@ type Step = {
   description: string;
   findElement: () => HTMLElement | null;
 };
+
+// Move steps outside the component so it's stable
+const STEPS: Step[] = [
+  {
+    id: "observations",
+    title: "Observações importantes",
+    description:
+      "Aqui você pode ver observações da nossa equipe de nutricionistas sobre sua rotina diária, restrições alimentares, dicas e notas que ajudam a seguir o plano. Toque para abrir as observações.",
+    findElement: () =>
+      document.querySelector(
+        'button[title="Observações"]',
+      ) as HTMLElement | null,
+  },
+  {
+    id: "water",
+    title: "Calcule sua água",
+    description:
+      "Use esta calculadora para estimar a ingestão diária de água. O resultado ficará visível no botão e ajuda a manter a hidratação adequada.",
+    findElement: () => {
+      const buttons = Array.from(
+        document.querySelectorAll("button"),
+      ) as HTMLElement[];
+      return (
+        buttons.find((b) => /\bágua\b|\bCalcular água\b/i.test(b.innerText)) ||
+        null
+      );
+    },
+  },
+  {
+    id: "export",
+    title: "Exportar para PDF",
+    description:
+      "Exporte o cardápio do dia como PDF para ter acesso offline ou imprimir. Este botão gera um arquivo com o cardápio, calorias e suas observações.",
+    findElement: () => {
+      const buttons = Array.from(
+        document.querySelectorAll("button"),
+      ) as HTMLElement[];
+      return (
+        buttons.find((b) => /\bExportar\b/i.test(b.textContent || "")) ||
+        buttons.find((b) => {
+          const svg = b.querySelector("svg");
+          if (!svg) return false;
+          const path = svg.querySelector('path[d*="16.5v2.25"]');
+          return !!path;
+        }) ||
+        null
+      );
+    },
+  },
+];
+
+const LOCAL_KEY = "walkthroughSeen";
 
 export default function Walkthrough({
   forceOpen = false,
@@ -19,58 +71,7 @@ export default function Walkthrough({
   const [stepIndex, setStepIndex] = useState(0);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
 
-  const LOCAL_KEY = "walkthroughSeen";
-
-  const steps: Step[] = [
-    {
-      id: "observations",
-      title: "Observações importantes",
-      description:
-        "Aqui você pode registrar observações sobre sua rotina diária, restrições alimentares, dicas e notas que ajudam a seguir o plano. Toque para abrir as observações.",
-      findElement: () =>
-        document.querySelector(
-          'button[title="Observações"]',
-        ) as HTMLElement | null,
-    },
-    {
-      id: "water",
-      title: "Calcule sua água",
-      description:
-        "Use esta calculadora para estimar a ingestão diária de água. O resultado ficará visível no botão e ajuda a manter a hidratação adequada.",
-      findElement: () => {
-        const buttons = Array.from(
-          document.querySelectorAll("button"),
-        ) as HTMLElement[];
-        return (
-          buttons.find((b) =>
-            /\bágua\b|\bCalcular água\b/i.test(b.innerText),
-          ) || null
-        );
-      },
-    },
-    {
-      id: "export",
-      title: "Exportar para PDF",
-      description:
-        "Exporte o cardápio do dia como PDF para ter acesso offline ou imprimir. Este botão gera um arquivo com o cardápio, calorias e suas observações.",
-      findElement: () => {
-        const buttons = Array.from(
-          document.querySelectorAll("button"),
-        ) as HTMLElement[];
-        return (
-          buttons.find((b) => /\bExportar\b/i.test(b.textContent || "")) ||
-          buttons.find((b) => {
-            const svg = b.querySelector("svg");
-            if (!svg) return false;
-            const path = svg.querySelector('path[d*="16.5v2.25"]');
-            return !!path;
-          }) ||
-          null
-        );
-      },
-    },
-  ];
-
+  // Initialize
   useEffect(() => {
     setMounted(true);
 
@@ -80,10 +81,11 @@ export default function Walkthrough({
         setOpen(true);
         setStepIndex(0);
       } else if (!seen) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           setOpen(true);
           setStepIndex(0);
         }, 200);
+        return () => clearTimeout(timer);
       }
     } catch (e) {
       if (forceOpen) {
@@ -93,6 +95,35 @@ export default function Walkthrough({
     }
   }, [forceOpen]);
 
+  // Handle close - useCallback to stabilize reference
+  const handleClose = useCallback((markSeen = true) => {
+    setOpen(false);
+    setHighlightRect(null);
+    if (markSeen) {
+      try {
+        localStorage.setItem(LOCAL_KEY, "1");
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  // Navigation handlers - useCallback
+  const handleSkip = useCallback(() => handleClose(true), [handleClose]);
+
+  const handleNext = useCallback(() => {
+    if (stepIndex < STEPS.length - 1) {
+      setStepIndex((s) => s + 1);
+    } else {
+      handleClose(true);
+    }
+  }, [stepIndex, handleClose]);
+
+  const handlePrev = useCallback(() => {
+    setStepIndex((s) => Math.max(0, s - 1));
+  }, []);
+
+  // Update highlight rect
   useEffect(() => {
     if (!open) {
       setHighlightRect(null);
@@ -103,7 +134,7 @@ export default function Walkthrough({
 
     const update = () => {
       if (!active) return;
-      const curStep = steps[stepIndex];
+      const curStep = STEPS[stepIndex];
       const el = curStep?.findElement();
       if (el) {
         const rect = el.getBoundingClientRect();
@@ -126,7 +157,6 @@ export default function Walkthrough({
 
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
-
     const interval = setInterval(update, 700);
 
     return () => {
@@ -135,10 +165,12 @@ export default function Walkthrough({
       window.removeEventListener("resize", onResize);
       clearInterval(interval);
     };
-  }, [open, stepIndex, steps]);
+  }, [open, stepIndex]); // Removed 'steps' from deps
 
+  // Keyboard navigation
   useEffect(() => {
     if (!open) return;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         handleClose(false);
@@ -148,43 +180,18 @@ export default function Walkthrough({
         handlePrev();
       }
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, stepIndex]);
-
-  const handleClose = (markSeen = true) => {
-    setOpen(false);
-    setHighlightRect(null);
-    if (markSeen) {
-      try {
-        localStorage.setItem(LOCAL_KEY, "1");
-      } catch (e) {
-        // ignore
-      }
-    }
-  };
-
-  const handleSkip = () => handleClose(true);
-
-  const handleNext = () => {
-    if (stepIndex < steps.length - 1) {
-      setStepIndex((s) => s + 1);
-    } else {
-      handleClose(true);
-    }
-  };
-
-  const handlePrev = () => {
-    setStepIndex((s) => Math.max(0, s - 1));
-  };
+  }, [open, handleClose, handleNext, handlePrev]);
 
   if (!mounted || !open) return null;
 
-  const current = steps[stepIndex];
+  const current = STEPS[stepIndex];
   const targetEl = current.findElement();
   const rect = highlightRect;
 
-  // Calculate tooltip position (kept inline since dynamic)
+  // Calculate tooltip position
   const tooltipStyle: React.CSSProperties = {
     left: "50%",
     transform: "translateX(-50%)",
@@ -221,16 +228,29 @@ export default function Walkthrough({
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]"
-        onClick={() => handleClose(true)}
-        aria-hidden
-      />
+
+      {rect ? (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]"
+          style={{
+            clipPath: `polygon(evenodd,
+              0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+              ${rect.left}px ${rect.top}px,
+              ${rect.right}px ${rect.top}px,
+              ${rect.right}px ${rect.bottom}px,
+              ${rect.left}px ${rect.bottom}px,
+              ${rect.left}px ${rect.top}px
+            )`,
+          }}
+        />
+      ) : (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]" />
+      )}
 
       {/* Highlight box */}
       {rect && (
         <div
-          className="fixed rounded-xl shadow-2xl border-2 border-orange-500/95 z-[10001] pointer-events-none"
+          className="fixed rounded-xl shadow-2xl border-2 border-none z-[10001] pointer-events-none"
           style={{
             left: rect.left - 8,
             top: rect.top - 8,
@@ -246,7 +266,6 @@ export default function Walkthrough({
         className="fixed w-[340px] max-w-[calc(100%-32px)] bg-white text-slate-900 rounded-xl p-4 shadow-2xl z-[10002]"
         style={tooltipStyle}
       >
-        {/* Header */}
         <div className="flex justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-orange-500 leading-tight">
@@ -263,15 +282,13 @@ export default function Walkthrough({
             )}
           </div>
           <span className="text-xs text-slate-400 font-medium shrink-0">
-            Passo {stepIndex + 1}/{steps.length}
+            Passo {stepIndex + 1}/{STEPS.length}
           </span>
         </div>
 
-        {/* Footer - Fixed layout */}
         <div className="flex items-center justify-between gap-4 mt-5 pt-2">
-          {/* Step dots */}
           <div className="flex items-center gap-1.5">
-            {steps.map((_, i) => (
+            {STEPS.map((_, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors duration-200 ${
@@ -281,7 +298,6 @@ export default function Walkthrough({
             ))}
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleSkip}
@@ -307,7 +323,7 @@ export default function Walkthrough({
                 onClick={handleNext}
                 className="px-4 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all"
               >
-                {stepIndex < steps.length - 1 ? "Próximo" : "Concluir"}
+                {stepIndex < STEPS.length - 1 ? "Próximo" : "Concluir"}
               </button>
             </div>
           </div>
