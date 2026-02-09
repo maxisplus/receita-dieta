@@ -1,0 +1,13 @@
+{
+  "name": "receita-dieta",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dieta Calculada - Cardápio semanal",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start"
+  },
+  "keywords": ["dieta", "cardapio", "nutricao"],
+  "license": "MIT"
+}
