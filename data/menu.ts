@@ -18,7 +18,7 @@ export interface DayMenu {
   meals: Meal[];
 }
 
-export const weekMenuEconomico: DayMenu[] = [
+export const weekMenu: DayMenu[] = [
   // ── DIA 1 ──
   {
     day: 1,
