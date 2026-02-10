@@ -505,15 +505,43 @@ function OptionBlock({
       {isOpen && (
         <div className="space-y-1 px-5 pb-3">
           {option.items.map((item, ii) => (
-            <div key={ii} className="flex items-baseline justify-between group">
-              <span className="text-sm text-gray-700 leading-relaxed">
-                <span className="text-gray-400 mr-1.5">–</span>
-                {item.item}
-              </span>
-              <span className="text-xs font-mono text-gray-400 tabular-nums ml-4 shrink-0 group-hover:text-gray-600 transition-colors">
-                {item.kcal}
-                <span className="text-[10px] ml-0.5">kcal</span>
-              </span>
+            <div key={ii} className="group">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm text-gray-700 leading-relaxed">
+                  <span className="text-gray-400 mr-1.5">–</span>
+                  {item.item}
+                </span>
+                <span className="text-xs font-mono text-gray-400 tabular-nums ml-4 shrink-0 group-hover:text-gray-600 transition-colors">
+                  {item.kcal}
+                  <span className="text-[10px] ml-0.5">kcal</span>
+                </span>
+              </div>
+
+              {/* Mostrar alternativas, se existirem */}
+              {item.alternatives && item.alternatives.length > 0 && (
+                <div className="mt-2 ml-4 pl-3 border-l border-gray-100">
+                  <div className="text-xs text-gray-500 mb-1">
+                    Alternativas:
+                  </div>
+                  <ul className="space-y-1">
+                    {item.alternatives.map((alt, ai) => (
+                      <li
+                        key={ai}
+                        className="flex items-baseline justify-between text-xs text-gray-600"
+                      >
+                        <span className="truncate">
+                          <span className="text-gray-400 mr-1">•</span>
+                          {alt.item}
+                        </span>
+                        <span className="ml-3 text-gray-400 font-mono tabular-nums text-[11px]">
+                          {alt.kcal}
+                          <span className="text-[10px] ml-0.5">kcal</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
