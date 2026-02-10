@@ -89,7 +89,7 @@ export default function LoginPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(maskPhone(e.target.value))}
-                  placeholder="(27) 99847-9940"
+                  placeholder="(00) 00000-0000"
                   className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl text-base
                     focus:outline-none focus:ring-2 focus:ring-[rgb(255,145,26)] focus:border-[rgb(255,145,26)]
                     placeholder:text-gray-400 transition-all"
