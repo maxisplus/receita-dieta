@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description: "Transforme sua saúde em três semanas",
     images: [
       {
-        url: "/challenge_logo.webp",
+        url: "/challenge_logo.png",
         width: 1200,
         height: 630,
         alt: "Desafio dos 21 dias - Transforme sua saúde",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/challenge_logo.webp"],
+    images: ["/challenge_logo.png"],
   },
 };
 
