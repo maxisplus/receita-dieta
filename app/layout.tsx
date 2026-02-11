@@ -9,6 +9,25 @@ export const metadata: Metadata = {
     icon: "/cropped-Prancheta-1-copia-2-e1726079055115.png",
     apple: "/cropped-Prancheta-1-copia-2-e1726079055115.png",
   },
+  // Add this:
+  openGraph: {
+    title: "Desafio dos 21 dias",
+    description: "Transforme sua saúde em três semanas",
+    images: [
+      {
+        url: "/challenge_logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Desafio dos 21 dias - Transforme sua saúde",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/challenge_logo.webp"],
+  },
 };
 
 export default function RootLayout({
