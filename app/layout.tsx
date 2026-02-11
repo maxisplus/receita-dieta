@@ -3,19 +3,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://desafio.dietacalculada.com"), // Add your actual domain
   title: "Desafio dos 21 dias",
   description: "Transforme sua saúde em três semanas",
   icons: {
     icon: "/cropped-Prancheta-1-copia-2-e1726079055115.png",
     apple: "/cropped-Prancheta-1-copia-2-e1726079055115.png",
   },
-  // Add this:
   openGraph: {
     title: "Desafio dos 21 dias",
     description: "Transforme sua saúde em três semanas",
     images: [
       {
-        url: "/challenge_logo.png",
+        url: "/challenge_logo.png", // Now this resolves to https://your-domain.com/challenge_logo.png
         width: 1200,
         height: 630,
         alt: "Desafio dos 21 dias - Transforme sua saúde",
