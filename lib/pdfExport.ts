@@ -1,7 +1,7 @@
 import { DayMenu } from "@/data/menu";
 import jsPDF from "jspdf";
 
-export function exportDayMenuToPDF(
+export async function exportDayMenuToPDF(
   dayMenu: DayMenu,
   dayNumber: number,
   userName: string,
@@ -193,6 +193,40 @@ export function exportDayMenuToPDF(
   //   });
   // }
 
-  // Save the PDF
-  pdf.save(`cardapio-dia-${dayNumber}.pdf`);
+  // Save/Share the PDF with in-app browser support
+  const fileName = `cardapio-dia-${dayNumber}.pdf`;
+  const pdfBlob = pdf.output("blob");
+
+  try {
+    // Try Web Share API first (best for mobile/in-app browsers)
+    if (navigator.share && navigator.canShare) {
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Cardápio - Dia ${dayNumber}`,
+        });
+        return;
+      }
+    }
+  } catch (error) {
+    console.log("Share failed, trying alternative method:", error);
+  }
+
+  // Fallback: Open in new tab (works better in in-app browsers)
+  try {
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const newWindow = window.open(blobUrl, "_blank");
+
+    if (!newWindow) {
+      // If popup blocked, fallback to regular download
+      pdf.save(fileName);
+    } else {
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    }
+  } catch (error) {
+    // Final fallback
+    pdf.save(fileName);
+  }
 }
